@@ -2,14 +2,15 @@ import os
 import re
 import json
 import gzip
-import google.generativeai as genai
+from copy import deepcopy
 
+import google.generativeai as genai
 import dotenv
 import psycopg2
 from flask_cors import CORS
 from pgvector.psycopg2 import register_vector
 from sentence_transformers import SentenceTransformer
-from flask import Flask, Response, request, make_response
+from flask import Flask, Response, request, make_response, jsonify
 
 
 dotenv.load_dotenv()
@@ -64,11 +65,11 @@ def interpolate_landmarks(start_landmark, end_landmark, ratio):
         else:
             interpolated_landmark = {
                 "x": start_landmark[i]["x"]
-                     + (end_landmark[i]["x"] - start_landmark[i]["x"]) * ratio,
+                + (end_landmark[i]["x"] - start_landmark[i]["x"]) * ratio,
                 "y": start_landmark[i]["y"]
-                     + (end_landmark[i]["y"] - start_landmark[i]["y"]) * ratio,
+                + (end_landmark[i]["y"] - start_landmark[i]["y"]) * ratio,
                 "z": start_landmark[i]["z"]
-                     + (end_landmark[i]["z"] - start_landmark[i]["z"]) * ratio,
+                + (end_landmark[i]["z"] - start_landmark[i]["z"]) * ratio,
                 "visibility": start_landmark[i]["visibility"],
             }
             interpolated_landmarks.append(interpolated_landmark)
@@ -128,31 +129,44 @@ def pose():
     frame_counter = 0
 
     cur = db.cursor()
+    
     for word in words:
-        embedding = embedding_model.encode(word)
+        # Normalize embeddings to make cosine distance meaningful
+        embedding = embedding_model.encode(word, normalize_embeddings=True)
+
         cur.execute(
-            "SELECT word, poses, (embedding <=> %s) AS cosine_similarity FROM signs ORDER BY cosine_similarity ASC LIMIT 1",
+            "SELECT word, poses, (embedding <=> %s) AS cosine_distance FROM signs ORDER BY cosine_distance ASC LIMIT 1",
             (embedding,),
         )
         result = cur.fetchone()
 
         animation = []
-        if (1 - result[2]) < 0.75:
-            for letter in word.upper():
-                fingerspell = fingerspelling.get(letter, [])
-                for i in range(len(fingerspell)):
-                    fingerspell[i]["word"] = f"fs-{word.upper()}"
-                animation += fingerspell
+
+        # Use cosine distance threshold (lower = more similar). Fallback if too far or missing.
+        distance = float(result[2]) if result and result[2] is not None else None
+        use_fingerspell = True if distance is None else distance > 0.25  # similarity < ~0.75
+
+        if use_fingerspell:
+            # Build frames from cached A–Z without mutating the cache
+            for letter in re.sub(r"[^A-Z]", "", word.upper()):
+                frames = fingerspelling.get(letter)
+                if not frames:
+                    continue
+                letter_frames = deepcopy(frames)
+                for f in letter_frames:
+                    f["word"] = f"fs-{word.upper()}"
+                animation.extend(letter_frames)
         else:
-            animation += result[1]
-            for i in range(len(animation)):
-                animation[i]["word"] = result[0]
+            # Also deepcopy DB frames before tagging
+            sign_frames = deepcopy(result[1]) if result and result[1] else []
+            for f in sign_frames:
+                f["word"] = result[0]
+            animation.extend(sign_frames)
 
         previous_frame = animations[-1] if animations else None
 
         if previous_frame and animation:
             next_frame = animation[0]
-
             for i in range(5):
                 ratio = i / 5
                 interpolated_frame = {
@@ -186,7 +200,7 @@ def pose():
         for f in animation:
             normalized = {
                 "frame": frame_counter,
-                "word": f.get("word", result[0]),
+                "word": f.get("word", result[0] if result else ""),
                 "pose_landmarks": f.get("pose_landmarks"),
                 "left_hand_landmarks": f.get("left_hand_landmarks"),
                 "right_hand_landmarks": f.get("right_hand_landmarks"),
@@ -203,5 +217,8 @@ def pose():
     return response
 
 
+
+
 if __name__ == "__main__":
     app.run()
+
