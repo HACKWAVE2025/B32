@@ -112,13 +112,9 @@ Below are inline players pointing to the videos you added in the root `assets/` 
 
 YouTube feature (demo1.mp4)
 
-<video src="https://github.com/HACKWAVE2025/B32/blob/main/assests/demo1.mp4" controls width="800" />
-
 [Open demo1.mp4 directly](assets/demo1.mp4)
 
 Selective search feature (demo2.mp4)
-
-<video src="https://github.com/HACKWAVE2025/B32/blob/main/assests/demo2.mp4" controls width="800" />
 
 [Open demo2.mp4 directly](assets/demo2.mp4)
 
@@ -127,12 +123,14 @@ Screenshots
 Add screenshots to visually document the current behavior.
 
 - YouTube overlay (sidebar avatar)
+<img width="432" height="316" alt="image" src="https://github.com/user-attachments/assets/f63635df-ad87-47e1-995a-212834279abe" />
 
 ```
 ![YouTube overlay](docs/screenshots/youtube-overlay.png)
 ```
 
 - Context menu preview (any page → select text → “Show in Sign Language”)
+<img width="344" height="476" alt="image" src="https://github.com/user-attachments/assets/9bad684f-c394-4f0d-8ebf-330c0cd579d6" />
 
 ```
 ![Context menu overlay](docs/screenshots/context-menu-overlay.png)
