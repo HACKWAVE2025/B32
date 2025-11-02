@@ -112,11 +112,11 @@ Below are inline players pointing to the videos you added in the root `assets/` 
 
 YouTube feature (demo1.mp4)
 
-[Open demo1.mp4 directly](assets/demo1.mp4)
+[Open demo1.mp4 directly](https://github.com/HACKWAVE2025/B32/blob/main/assests/demo1.mp4)
 
 Selective search feature (demo2.mp4)
 
-[Open demo2.mp4 directly](assets/demo2.mp4)
+[Open demo2.mp4 directly](https://github.com/HACKWAVE2025/B32/blob/main/assests/demo2.mp4)
 
 Screenshots
 -----------
